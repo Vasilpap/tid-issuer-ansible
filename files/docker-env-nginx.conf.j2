@@ -18,7 +18,7 @@ server {
 
     location /api/ {
         set $api_upstream http://api:8080;
-        proxy_pass $api_upstream/api/;
+        proxy_pass $api_upstream$request_uri;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -28,7 +28,7 @@ server {
 
     location /q/ {
         set $api_upstream http://api:8080;
-        proxy_pass $api_upstream/q/;
+        proxy_pass $api_upstream$request_uri;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -38,7 +38,7 @@ server {
 
     location /realms/ {
         set $keycloak_upstream http://keycloak:8080;
-        proxy_pass $keycloak_upstream/realms/;
+        proxy_pass $keycloak_upstream$request_uri;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -49,7 +49,7 @@ server {
 
     location /resources/ {
         set $keycloak_upstream http://keycloak:8080;
-        proxy_pass $keycloak_upstream/resources/;
+        proxy_pass $keycloak_upstream$request_uri;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -60,7 +60,7 @@ server {
 
     location /js/ {
         set $keycloak_upstream http://keycloak:8080;
-        proxy_pass $keycloak_upstream/js/;
+        proxy_pass $keycloak_upstream$request_uri;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -71,7 +71,7 @@ server {
 
     location /admin/ {
         set $keycloak_upstream http://keycloak:8080;
-        proxy_pass $keycloak_upstream/admin/;
+        proxy_pass $keycloak_upstream$request_uri;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
