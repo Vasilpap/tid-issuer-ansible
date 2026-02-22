@@ -42,12 +42,12 @@ ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @gro
 ## Docker-Env Scenario
 
 - Target host group: `docker_env_hosts` (host: `docker-env`)
-- Deploys infra services, API, and frontend from container images in a single Compose stack
-- Default image refs:
-  - `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
+- Deploys infra services, API, and frontend in a single Compose stack
+- API image is built locally on the target host from `tid-issuer-quarkus` (`main`) and tagged as `tid-issuer-quarkus:local`
+- Frontend image default ref:
   - `ghcr.io/vasilpap/tid-issuer-vue:latest`
+- API remote image ref is still available as `tid_docker_env_api_image_remote` if you want to switch back
 - Web endpoint is exposed on HTTPS (`443`) in this scenario
-- GHCR login is optional; configure `vault_tid_docker_env_ghcr_username` and `vault_tid_docker_env_ghcr_token` only for private images
 
 Quick run:
 

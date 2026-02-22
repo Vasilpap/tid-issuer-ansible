@@ -11,11 +11,14 @@ server {
     ssl_certificate /etc/ssl/certs/tid-issuer-web.crt;
     ssl_certificate_key /etc/ssl/private/tid-issuer-web.key;
 
+    resolver 127.0.0.11 ipv6=off valid=10s;
+
     root /usr/share/nginx/html;
     index index.html;
 
     location /api/ {
-        proxy_pass http://api:8080/api/;
+        set $api_upstream http://api:8080;
+        proxy_pass $api_upstream/api/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -24,7 +27,8 @@ server {
     }
 
     location /q/ {
-        proxy_pass http://api:8080/q/;
+        set $api_upstream http://api:8080;
+        proxy_pass $api_upstream/q/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -33,7 +37,8 @@ server {
     }
 
     location /realms/ {
-        proxy_pass http://keycloak:8080/realms/;
+        set $keycloak_upstream http://keycloak:8080;
+        proxy_pass $keycloak_upstream/realms/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -43,7 +48,8 @@ server {
     }
 
     location /resources/ {
-        proxy_pass http://keycloak:8080/resources/;
+        set $keycloak_upstream http://keycloak:8080;
+        proxy_pass $keycloak_upstream/resources/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -53,7 +59,8 @@ server {
     }
 
     location /js/ {
-        proxy_pass http://keycloak:8080/js/;
+        set $keycloak_upstream http://keycloak:8080;
+        proxy_pass $keycloak_upstream/js/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -63,7 +70,8 @@ server {
     }
 
     location /admin/ {
-        proxy_pass http://keycloak:8080/admin/;
+        set $keycloak_upstream http://keycloak:8080;
+        proxy_pass $keycloak_upstream/admin/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -73,7 +81,8 @@ server {
     }
 
     location /auth/ {
-        proxy_pass http://keycloak:8080/;
+        set $keycloak_upstream http://keycloak:8080;
+        proxy_pass $keycloak_upstream/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
