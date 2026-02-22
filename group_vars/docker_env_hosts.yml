@@ -34,10 +34,11 @@ tid_docker_env_tls_san: "IP:192.168.56.103,DNS:docker-env"
 tid_docker_env_postgres_image: "postgres:17.4-alpine"
 tid_docker_env_keycloak_image: "quay.io/keycloak/keycloak:26.0.7"
 tid_docker_env_minio_image: "minio/minio:RELEASE.2025-02-18T16-25-55Z"
-tid_docker_env_api_image: "tid-issuer-quarkus:local"
-tid_docker_env_api_image_remote: "ghcr.io/vasilpap/tid-issuer-quarkus:latest"
+tid_docker_env_api_image: "ghcr.io/vasilpap/tid-issuer-quarkus:latest"
 tid_docker_env_web_image: "ghcr.io/vasilpap/tid-issuer-vue:latest"
 
+tid_docker_env_build_api_local: false
+tid_docker_env_api_local_image: "tid-issuer-quarkus:local"
 tid_docker_env_api_repo_url: "{{ tid_repositories.api }}"
 tid_docker_env_api_build_dir: /opt/tid-issuer/build/api
 tid_docker_env_api_java_package: openjdk-21-jdk-headless

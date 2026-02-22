@@ -43,10 +43,11 @@ ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @gro
 
 - Target host group: `docker_env_hosts` (host: `docker-env`)
 - Deploys infra services, API, and frontend in a single Compose stack
-- API image is built locally on the target host from `tid-issuer-quarkus` (`main`) and tagged as `tid-issuer-quarkus:local`
+- API image default ref:
+  - `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
 - Frontend image default ref:
   - `ghcr.io/vasilpap/tid-issuer-vue:latest`
-- API remote image ref is still available as `tid_docker_env_api_image_remote` if you want to switch back
+- Optional fallback: set `tid_docker_env_build_api_local: true` to build `tid-issuer-quarkus:local` on target host
 - Web endpoint is exposed on HTTPS (`443`) in this scenario
 
 Quick run:

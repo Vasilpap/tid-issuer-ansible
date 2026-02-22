@@ -12,9 +12,14 @@
           - gnupg
           - git
           - openssl
-          - "{{ tid_docker_env_api_java_package }}"
         state: present
         update_cache: true
+
+    - name: Install Java for optional local API build
+      ansible.builtin.apt:
+        name: "{{ tid_docker_env_api_java_package }}"
+        state: present
+      when: tid_docker_env_build_api_local | bool
 
     - name: Ensure apt keyrings directory exists
       ansible.builtin.file:
@@ -65,6 +70,7 @@
         - "{{ tid_docker_env_tls_dir }}"
         - "{{ tid_docker_env_assets_dir }}"
         - "{{ tid_docker_env_api_build_dir }}"
+      when: tid_docker_env_build_api_local | bool or item != tid_docker_env_api_build_dir
 
     - name: Sync API repository for local image build
       ansible.builtin.git:
@@ -74,6 +80,7 @@
         force: true
         update: true
       become_user: "{{ tid_docker_env_owner }}"
+      when: tid_docker_env_build_api_local | bool
 
     - name: Build API package for local container image
       ansible.builtin.command: ./mvnw clean -DskipTests package
@@ -83,17 +90,19 @@
       environment:
         MAVEN_OPTS: "-Xmx512m"
       changed_when: false
+      when: tid_docker_env_build_api_local | bool
 
     - name: Build local API container image
       ansible.builtin.command: >-
         docker build
         -f src/main/docker/Dockerfile.jvm
-        -t {{ tid_docker_env_api_image }}
+        -t {{ tid_docker_env_api_local_image }}
         .
       args:
         chdir: "{{ tid_docker_env_api_build_dir }}"
       become_user: "{{ tid_docker_env_owner }}"
       changed_when: false
+      when: tid_docker_env_build_api_local | bool
 
     - name: Sync infra assets repository for realm export
       ansible.builtin.git:
