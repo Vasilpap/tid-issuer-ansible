@@ -1,67 +1,73 @@
 # TID Issuer Ansible
 
-Infrastructure and application deployment automation for the TID Issuer platform.
+Automation for deploying the TID Issuer stack in two modes:
 
-## What It Deploys
+- split deployment on 3 target VMs (`infra`, `api`, `web`)
+- full stack deployment on 1 target VM (`docker-env`)
 
-- Infrastructure services on `infra_hosts` (PostgreSQL, Keycloak, MinIO)
-- Quarkus API on `api_hosts`
-- Vue frontend and Nginx on `web_hosts`
-- Full stack on `docker_env_hosts` via Docker Compose (infra + API + web)
+## Playbooks
 
-## Repository Layout
+- `playbooks/site.yml`: split scenario orchestrator (`infra -> api -> web`)
+- `playbooks/infra.yml`: Docker + platform stack (PostgreSQL, Keycloak, MinIO)
+- `playbooks/api.yml`: Quarkus API as `systemd` service
+- `playbooks/web.yml`: Vue build + Nginx reverse proxy
+- `playbooks/docker-env.yml`: single-host full stack via Docker Compose
 
-- `hosts.yaml`: inventory
-- `group_vars/`: host-group configuration and secret placeholders
-- `playbooks/`: `infra.yml`, `api.yml`, `web.yml`, `docker-env.yml`, `site.yml`
-- `files/`: templates for env files and service configs
+```mermaid
+flowchart LR
+  A[infra.yml] --> B[api.yml]
+  B --> C[web.yml]
+```
+
+## Inventory
+
+- `infra_hosts` -> `infra-server`
+- `api_hosts` -> `api-server`
+- `web_hosts` -> `front-server`
+- `docker_env_hosts` -> `docker-env` (`192.168.56.103`)
+
+`ansible.cfg` already points to `hosts.yaml`.
 
 ## Secrets
 
-This repo supports encrypted secrets with Ansible Vault.
+Use vault file:
 
 ```bash
 ansible-vault edit group_vars/secrets.vault.yml
 ```
 
-Deploy with the vault file:
+Run with secrets:
 
 ```bash
-ansible-playbook -i hosts.yaml playbooks/site.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
+ansible-playbook playbooks/site.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
 ```
 
-## Common Runs
+## How To Run
+
+Split scenario:
 
 ```bash
-ansible-playbook -i hosts.yaml playbooks/infra.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
-ansible-playbook -i hosts.yaml playbooks/api.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
-ansible-playbook -i hosts.yaml playbooks/web.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
-ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
+ansible-playbook playbooks/site.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
 ```
 
-## Docker-Env Scenario
+Single VM scenario:
 
-- Target host group: `docker_env_hosts` (host: `docker-env`)
-- Deploys infra services, API, and frontend in a single Compose stack
-- API image default ref:
-  - `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
-- Frontend image default ref:
-  - `ghcr.io/vasilpap/tid-issuer-vue:latest`
-- Web endpoint is exposed on HTTPS (`443`) in this scenario
+```bash
+ansible-playbook playbooks/docker-env.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
+```
 
-Quick run:
+Optional explicit inventory form:
 
 ```bash
 ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
 ```
 
-Note: `ansible.cfg` already sets `inventory = ./hosts.yaml`, so `-i hosts.yaml` is optional when running from this repository.
+## Docker-Env Images
+
+- API: `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
+- Web: `ghcr.io/vasilpap/tid-issuer-vue:latest`
 
 ## Notes
 
 - Repositories are synced from `main`.
-- Inventory hostnames are aligned with the Vagrant environment by default.
-
-## Architecture and Diagrams
-
-Cross-repository diagrams (API DTO class diagram, system architecture, deployment diagram) and the complete technology inventory are documented in `../WORKSPACE_ARCHITECTURE.md`.
+- Templates for env/systemd/nginx/compose are in `files/`.
