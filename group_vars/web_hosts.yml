@@ -18,7 +18,15 @@ tid_web_api_base: ""
 tid_web_api_proxy_url: "http://{{ tid_hosts.api }}:8080"
 
 # Public URL used by host browser clients.
-tid_web_public_url: "http://192.168.56.103"
+tid_web_public_url: "https://192.168.56.103"
+tid_web_public_host: "192.168.56.103"
+
+# Self-signed TLS cert for the frontend endpoint.
+tid_web_tls_enabled: true
+tid_web_tls_cert_path: /etc/ssl/certs/tid-issuer-web.crt
+tid_web_tls_key_path: /etc/ssl/private/tid-issuer-web.key
+tid_web_tls_common_name: "{{ tid_web_public_host }}"
+tid_web_tls_san: "IP:192.168.56.103,DNS:front-server"
 
 # Frontend talks to Keycloak through Nginx on the frontend host.
 tid_web_keycloak_url: "{{ tid_web_public_url }}"

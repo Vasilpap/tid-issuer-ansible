@@ -16,6 +16,7 @@
           - git
           - curl
           - ca-certificates
+          - openssl
           - nginx
           - rsync
         state: present
@@ -99,6 +100,52 @@
         owner: www-data
         group: www-data
         mode: "0755"
+
+    - name: Ensure TLS certificate directory exists
+      ansible.builtin.file:
+        path: "{{ tid_web_tls_cert_path | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: tid_web_tls_enabled | bool
+
+    - name: Ensure TLS private key directory exists
+      ansible.builtin.file:
+        path: "{{ tid_web_tls_key_path | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+      when: tid_web_tls_enabled | bool
+
+    - name: Generate self-signed TLS certificate for web endpoint
+      ansible.builtin.command: >-
+        openssl req -x509 -nodes -newkey rsa:2048 -sha256
+        -days 825
+        -keyout {{ tid_web_tls_key_path }}
+        -out {{ tid_web_tls_cert_path }}
+        -subj /CN={{ tid_web_tls_common_name }}
+        -addext subjectAltName={{ tid_web_tls_san }}
+      args:
+        creates: "{{ tid_web_tls_cert_path }}"
+      when: tid_web_tls_enabled | bool
+
+    - name: Ensure TLS private key permissions
+      ansible.builtin.file:
+        path: "{{ tid_web_tls_key_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      when: tid_web_tls_enabled | bool
+
+    - name: Ensure TLS certificate permissions
+      ansible.builtin.file:
+        path: "{{ tid_web_tls_cert_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      when: tid_web_tls_enabled | bool
 
     - name: Publish built web assets
       ansible.builtin.command: >-
