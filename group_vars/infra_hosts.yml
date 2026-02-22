@@ -22,6 +22,7 @@ tid_platform_keycloak_db_name: keycloakdb
 
 tid_platform_kc_admin_user: admin
 tid_platform_kc_admin_password: "{{ vault_tid_platform_kc_admin_password | default('change-me-keycloak-admin-password') }}"
+tid_platform_keycloak_public_url: "https://192.168.56.103"
 
 tid_platform_minio_root_user: minioadmin
 tid_platform_minio_root_password: "{{ vault_tid_platform_minio_root_password | default('change-me-minio-root-password') }}"
