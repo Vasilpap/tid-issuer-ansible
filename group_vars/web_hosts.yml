@@ -17,7 +17,8 @@ tid_web_env_file: "{{ tid_web_repo_dir }}/.env.production"
 tid_web_api_base: ""
 tid_web_api_proxy_url: "http://{{ tid_hosts.api }}:8080"
 
-tid_web_keycloak_url: "http://{{ tid_hosts.infra }}:8180"
+# Use infra private IP so browser clients on host machine can reach Keycloak.
+tid_web_keycloak_url: "http://192.168.56.102:8180"
 tid_web_keycloak_realm: "{{ tid_identity.realm }}"
 tid_web_keycloak_client_id: "{{ tid_identity.web_client_id }}"
 tid_web_keycloak_api_client_id: "{{ tid_identity.api_client_id }}"
