@@ -123,13 +123,13 @@
       become_user: "{{ tid_platform_owner }}"
       changed_when: false
 
-    - name: Restrict host access to infra service ports
+    - name: Restrict host-machine direct access to infra service ports
       ansible.builtin.shell: |
         set -eu
 
         ensure_rule() {
-          if ! iptables -C DOCKER-USER "$@" 2>/dev/null; then
-            iptables -I DOCKER-USER 1 "$@"
+          if ! iptables -C INPUT "$@" 2>/dev/null; then
+            iptables -I INPUT 1 "$@"
           fi
         }
 
@@ -139,12 +139,6 @@
         ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 8180 -j DROP
         ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 9000 -j DROP
         ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 9001 -j DROP
-
-        # API and Web VMs are allowed to reach required infra services.
-        ensure_rule -s {{ tid_platform_api_ip }} -p tcp --dport 5432 -j ACCEPT
-        ensure_rule -s {{ tid_platform_api_ip }} -p tcp --dport 8180 -j ACCEPT
-        ensure_rule -s {{ tid_platform_web_ip }} -p tcp --dport 8180 -j ACCEPT
-        ensure_rule -s {{ tid_platform_api_ip }} -p tcp --dport 9000 -j ACCEPT
       args:
         executable: /bin/bash
       when: tid_platform_restrict_host_access | bool
