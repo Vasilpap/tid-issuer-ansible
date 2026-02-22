@@ -47,7 +47,6 @@ ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @gro
   - `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
 - Frontend image default ref:
   - `ghcr.io/vasilpap/tid-issuer-vue:latest`
-- Optional fallback: set `tid_docker_env_build_api_local: true` to build `tid-issuer-quarkus:local` on target host
 - Web endpoint is exposed on HTTPS (`443`) in this scenario
 
 Quick run:
