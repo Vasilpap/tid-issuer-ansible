@@ -27,4 +27,4 @@ all:
     docker_env_hosts:
       hosts:
         docker-env:
-          ansible_host: docker-env
+          ansible_host: 192.168.56.103
