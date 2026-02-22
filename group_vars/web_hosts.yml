@@ -21,7 +21,7 @@ tid_web_api_proxy_url: "http://{{ tid_hosts.api }}:8080"
 tid_web_public_url: "http://192.168.56.103"
 
 # Frontend talks to Keycloak through Nginx on the frontend host.
-tid_web_keycloak_url: "{{ tid_web_public_url }}/auth"
+tid_web_keycloak_url: "{{ tid_web_public_url }}"
 tid_web_keycloak_proxy_url: "http://{{ tid_hosts.infra }}:8180"
 tid_web_keycloak_realm: "{{ tid_identity.realm }}"
 tid_web_keycloak_client_id: "{{ tid_identity.web_client_id }}"

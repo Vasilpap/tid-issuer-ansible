@@ -29,3 +29,6 @@ tid_platform_minio_root_password: "{{ vault_tid_platform_minio_root_password | d
 # Restrict direct host-machine access to infra service ports while allowing API/Web VMs.
 tid_platform_restrict_host_access: true
 tid_platform_host_machine_ip: 192.168.56.1
+tid_platform_host_only_iface: enp0s8
+tid_platform_api_ip: 192.168.56.101
+tid_platform_web_ip: 192.168.56.103

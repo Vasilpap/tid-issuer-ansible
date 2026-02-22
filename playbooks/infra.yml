@@ -128,17 +128,22 @@
         set -eu
 
         ensure_rule() {
-          if ! iptables -C INPUT "$@" 2>/dev/null; then
-            iptables -I INPUT 1 "$@"
+          if ! iptables -C DOCKER-USER "$@" 2>/dev/null; then
+            iptables -A DOCKER-USER "$@"
           fi
         }
 
+        # Allow known VM clients to reach required infra container ports.
+        ensure_rule -i {{ tid_platform_host_only_iface }} -s {{ tid_platform_api_ip }} -p tcp --dport 5432 -j ACCEPT
+        ensure_rule -i {{ tid_platform_host_only_iface }} -s {{ tid_platform_api_ip }} -p tcp --dport 8080 -j ACCEPT
+        ensure_rule -i {{ tid_platform_host_only_iface }} -s {{ tid_platform_web_ip }} -p tcp --dport 8080 -j ACCEPT
+        ensure_rule -i {{ tid_platform_host_only_iface }} -s {{ tid_platform_api_ip }} -p tcp --dport 9000 -j ACCEPT
+
         # Host machine should not access infra service ports directly.
-        ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 5432 -j DROP
-        ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 5433 -j DROP
-        ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 8180 -j DROP
-        ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 9000 -j DROP
-        ensure_rule -s {{ tid_platform_host_machine_ip }} -p tcp --dport 9001 -j DROP
+        ensure_rule -i {{ tid_platform_host_only_iface }} -p tcp --dport 5432 -j DROP
+        ensure_rule -i {{ tid_platform_host_only_iface }} -p tcp --dport 8080 -j DROP
+        ensure_rule -i {{ tid_platform_host_only_iface }} -p tcp --dport 9000 -j DROP
+        ensure_rule -i {{ tid_platform_host_only_iface }} -p tcp --dport 9001 -j DROP
       args:
         executable: /bin/bash
       when: tid_platform_restrict_host_access | bool
