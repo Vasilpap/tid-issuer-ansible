@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  quarkus-db:
+    image: ${POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${QUARKUS_DB_USER}
+      POSTGRES_PASSWORD: ${QUARKUS_DB_PASSWORD}
+      POSTGRES_DB: ${QUARKUS_DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - quarkus_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+
+  keycloak-db:
+    image: ${POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${KEYCLOAK_DB_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_DB: ${KEYCLOAK_DB_NAME}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+
+  keycloak:
+    image: ${KEYCLOAK_IMAGE}
+    command: ["start-dev", "--import-realm"]
+    restart: unless-stopped
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
+    ports:
+      - "8180:8080"
+    depends_on:
+      - keycloak-db
+    networks:
+      - backend-net
+    volumes:
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+
+  minio:
+    image: ${MINIO_IMAGE}
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend-net
+
+  api:
+    image: ${API_IMAGE}
+    restart: unless-stopped
+    environment:
+      QUARKUS_HTTP_PORT: ${API_HTTP_PORT}
+      QUARKUS_DATASOURCE_JDBC_URL: ${API_DB_URL}
+      QUARKUS_DATASOURCE_USERNAME: ${API_DB_USERNAME}
+      QUARKUS_DATASOURCE_PASSWORD: ${API_DB_PASSWORD}
+      QUARKUS_DATASOURCE_JDBC_MAX_SIZE: ${API_DB_MAX_SIZE}
+      QUARKUS_OIDC_AUTH_SERVER_URL: ${API_OIDC_AUTH_SERVER_URL}
+      QUARKUS_OIDC_CLIENT_ID: ${API_OIDC_CLIENT_ID}
+      QUARKUS_OIDC_CREDENTIALS_SECRET: ${API_OIDC_CREDENTIALS_SECRET}
+      KEYCLOAK_TLS_VERIFY: ${API_KEYCLOAK_TLS_VERIFY}
+      CORS_ALLOWED_ORIGINS: ${API_CORS_ALLOWED_ORIGINS}
+      QUARKUS_LOG_SQL: ${API_LOG_SQL}
+      QUARKUS_LOG_FILE_ENABLE: ${API_LOG_FILE_ENABLE}
+      QUARKUS_LOG_FILE_PATH: ${API_LOG_FILE_PATH}
+      MINIO_URL: ${API_MINIO_URL}
+      MINIO_ACCESS_KEY: ${API_MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${API_MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${API_MINIO_BUCKET}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - quarkus-db
+      - keycloak
+      - minio
+    networks:
+      - backend-net
+
+  web:
+    image: ${WEB_IMAGE}
+    restart: unless-stopped
+    ports:
+      - "${PUBLIC_HTTP_PORT}:80"
+      - "${PUBLIC_HTTPS_PORT}:443"
+    depends_on:
+      - api
+      - keycloak
+    networks:
+      - backend-net
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./tls/tid-issuer-web.crt:/etc/ssl/certs/tid-issuer-web.crt:ro
+      - ./tls/tid-issuer-web.key:/etc/ssl/private/tid-issuer-web.key:ro
+
+volumes:
+  quarkus_db_data:
+  keycloak_db_data:
+  minio_data:
+
+networks:
+  backend-net:
+    driver: bridge

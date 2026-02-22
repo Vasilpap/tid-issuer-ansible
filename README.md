@@ -7,12 +7,13 @@ Infrastructure and application deployment automation for the TID Issuer platform
 - Infrastructure services on `infra_hosts` (PostgreSQL, Keycloak, MinIO)
 - Quarkus API on `api_hosts`
 - Vue frontend and Nginx on `web_hosts`
+- Full stack on `docker_env_hosts` via Docker Compose (infra + API + web)
 
 ## Repository Layout
 
 - `hosts.yaml`: inventory
 - `group_vars/`: host-group configuration and secret placeholders
-- `playbooks/`: `infra.yml`, `api.yml`, `web.yml`, `site.yml`
+- `playbooks/`: `infra.yml`, `api.yml`, `web.yml`, `docker-env.yml`, `site.yml`
 - `files/`: templates for env files and service configs
 
 ## Secrets
@@ -35,9 +36,23 @@ ansible-playbook -i hosts.yaml playbooks/site.yml --ask-vault-pass -e @group_var
 ansible-playbook -i hosts.yaml playbooks/infra.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
 ansible-playbook -i hosts.yaml playbooks/api.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
 ansible-playbook -i hosts.yaml playbooks/web.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
+ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
 ```
+
+## Docker-Env Scenario
+
+- Target host group: `docker_env_hosts` (host: `docker-env`)
+- Deploys infra services, API, and frontend from container images in a single Compose stack
+- Default image refs:
+  - `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
+  - `ghcr.io/vasilpap/tid-issuer-vue:latest`
+- GHCR login is optional; configure `vault_tid_docker_env_ghcr_username` and `vault_tid_docker_env_ghcr_token` only for private images
 
 ## Notes
 
 - Repositories are synced from `main`.
 - Inventory hostnames are aligned with the Vagrant environment by default.
+
+## Architecture and Diagrams
+
+Cross-repository diagrams (API DTO class diagram, system architecture, deployment diagram) and the complete technology inventory are documented in `../WORKSPACE_ARCHITECTURE.md`.

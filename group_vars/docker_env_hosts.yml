@@ -1,0 +1,75 @@
+---
+docker_users:
+  - "{{ ansible_user }}"
+docker_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+tid_docker_env_owner: "{{ ansible_user }}"
+tid_docker_env_group: "{{ ansible_user }}"
+
+tid_docker_env_dir: /opt/tid-issuer/docker-env
+tid_docker_env_env_file: "{{ tid_docker_env_dir }}/.env"
+tid_docker_env_compose_file: "{{ tid_docker_env_dir }}/docker-compose.yml"
+tid_docker_env_nginx_conf_file: "{{ tid_docker_env_dir }}/nginx.conf"
+tid_docker_env_tls_dir: "{{ tid_docker_env_dir }}/tls"
+
+tid_docker_env_assets_repo_url: "{{ tid_repositories.infra }}"
+tid_docker_env_assets_dir: /opt/tid-issuer/infra-assets
+tid_docker_env_realm_export_src: "{{ tid_docker_env_assets_dir }}/realm-export.json"
+tid_docker_env_realm_export_dest: "{{ tid_docker_env_dir }}/realm-export.json"
+
+tid_docker_env_public_url: "https://192.168.56.103"
+tid_docker_env_public_host: "192.168.56.103"
+tid_docker_env_server_name: docker-env
+
+tid_docker_env_http_port: 80
+tid_docker_env_https_port: 443
+
+tid_docker_env_tls_cert_path: "{{ tid_docker_env_tls_dir }}/tid-issuer-web.crt"
+tid_docker_env_tls_key_path: "{{ tid_docker_env_tls_dir }}/tid-issuer-web.key"
+tid_docker_env_tls_common_name: "{{ tid_docker_env_public_host }}"
+tid_docker_env_tls_san: "IP:192.168.56.103,DNS:docker-env"
+
+tid_docker_env_postgres_image: "postgres:17.4-alpine"
+tid_docker_env_keycloak_image: "quay.io/keycloak/keycloak:26.0.7"
+tid_docker_env_minio_image: "minio/minio:RELEASE.2025-02-18T16-25-55Z"
+tid_docker_env_api_image: "ghcr.io/vasilpap/tid-issuer-quarkus:latest"
+tid_docker_env_web_image: "ghcr.io/vasilpap/tid-issuer-vue:latest"
+
+tid_docker_env_quarkus_db_user: quarkus
+tid_docker_env_quarkus_db_password: "{{ vault_tid_docker_env_quarkus_db_password | default('change-me-quarkus-db-password') }}"
+tid_docker_env_quarkus_db_name: quarkusdb
+
+tid_docker_env_keycloak_db_user: keycloak
+tid_docker_env_keycloak_db_password: "{{ vault_tid_docker_env_keycloak_db_password | default('change-me-keycloak-db-password') }}"
+tid_docker_env_keycloak_db_name: keycloakdb
+
+tid_docker_env_kc_admin_user: admin
+tid_docker_env_kc_admin_password: "{{ vault_tid_docker_env_kc_admin_password | default('change-me-keycloak-admin-password') }}"
+tid_docker_env_keycloak_public_url: "{{ tid_docker_env_public_url }}"
+
+tid_docker_env_minio_root_user: minioadmin
+tid_docker_env_minio_root_password: "{{ vault_tid_docker_env_minio_root_password | default('change-me-minio-root-password') }}"
+
+tid_docker_env_api_http_port: 8080
+tid_docker_env_api_db_url: "jdbc:postgresql://quarkus-db:5432/{{ tid_docker_env_quarkus_db_name }}"
+tid_docker_env_api_db_username: "{{ tid_docker_env_quarkus_db_user }}"
+tid_docker_env_api_db_password: "{{ tid_docker_env_quarkus_db_password }}"
+tid_docker_env_api_db_max_size: 20
+tid_docker_env_api_oidc_auth_server_url: "http://keycloak:8080/realms/{{ tid_identity.realm }}"
+tid_docker_env_api_oidc_client_id: "{{ tid_identity.api_client_id }}"
+tid_docker_env_api_oidc_credentials_secret: "{{ vault_tid_docker_env_api_oidc_credentials_secret | default('') }}"
+tid_docker_env_api_keycloak_tls_verify: none
+tid_docker_env_api_cors_allowed_origins: "{{ tid_docker_env_public_url }}"
+tid_docker_env_api_log_sql: false
+tid_docker_env_api_log_file_enable: false
+tid_docker_env_api_log_file_path: /tmp/tid-issuer-application.log
+tid_docker_env_api_minio_url: "http://minio:9000"
+tid_docker_env_api_minio_access_key: "{{ tid_docker_env_minio_root_user }}"
+tid_docker_env_api_minio_secret_key: "{{ tid_docker_env_minio_root_password }}"
+tid_docker_env_api_minio_bucket: articles-of-association
+
+tid_docker_env_ghcr_registry: ghcr.io
+tid_docker_env_ghcr_username: "{{ vault_tid_docker_env_ghcr_username | default('') }}"
+tid_docker_env_ghcr_token: "{{ vault_tid_docker_env_ghcr_token | default('') }}"

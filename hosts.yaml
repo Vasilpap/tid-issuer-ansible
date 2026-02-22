@@ -23,3 +23,8 @@ all:
       hosts:
         front-server:
           ansible_host: front-server
+
+    docker_env_hosts:
+      hosts:
+        docker-env:
+          ansible_host: docker-env
