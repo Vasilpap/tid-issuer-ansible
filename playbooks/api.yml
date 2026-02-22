@@ -70,6 +70,14 @@
       become_user: "{{ tid_api_user }}"
       register: tid_api_repo_sync
 
+    - name: Ensure API target directory ownership for build user
+      ansible.builtin.file:
+        path: "{{ tid_api_repo_dir }}/target"
+        state: directory
+        owner: "{{ tid_api_user }}"
+        group: "{{ tid_api_group }}"
+        recurse: true
+
     - name: Check API runnable jar
       ansible.builtin.stat:
         path: "{{ tid_api_jar_path }}"
@@ -79,6 +87,8 @@
       ansible.builtin.command: ./mvnw -DskipTests package
       args:
         chdir: "{{ tid_api_repo_dir }}"
+      environment:
+        MAVEN_OPTS: "-Xmx512m"
       become_user: "{{ tid_api_user }}"
       when:
         - tid_api_force_build or tid_api_repo_sync.changed or not tid_api_jar.stat.exists

@@ -15,7 +15,7 @@ tid_api_env_file: "{{ tid_api_config_dir }}/api.env"
 tid_api_service_name: tid-issuer-api
 tid_api_force_build: false
 
-tid_api_java_package: openjdk-21-jre-headless
+tid_api_java_package: openjdk-21-jdk-headless
 
 tid_api_http_port: 8080
 tid_api_db_url: "jdbc:postgresql://{{ tid_hosts.infra }}:5432/quarkusdb"
