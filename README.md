@@ -46,6 +46,7 @@ ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @gro
 - Default image refs:
   - `ghcr.io/vasilpap/tid-issuer-quarkus:latest`
   - `ghcr.io/vasilpap/tid-issuer-vue:latest`
+- Web endpoint is exposed on HTTPS (`443`) in this scenario
 - GHCR login is optional; configure `vault_tid_docker_env_ghcr_username` and `vault_tid_docker_env_ghcr_token` only for private images
 
 Quick run:

@@ -4,7 +4,7 @@
   become: true
 
   pre_tasks:
-    - name: Install Docker prerequisites
+    - name: Install base packages
       ansible.builtin.apt:
         name:
           - ca-certificates
@@ -42,7 +42,6 @@
           - docker-ce
           - docker-ce-cli
           - containerd.io
-          - docker-buildx-plugin
           - docker-compose-plugin
         state: present
 
@@ -52,56 +51,18 @@
         state: started
         enabled: true
 
-    - name: Ensure Docker group exists
-      ansible.builtin.group:
-        name: docker
-        state: present
-
-    - name: Add selected users to Docker group
-      ansible.builtin.user:
-        name: "{{ item }}"
-        groups: docker
-        append: true
-      loop: "{{ docker_users }}"
-      when: docker_users | length > 0
-      register: docker_group_result
-
-    - name: Reset connection to pick up Docker group membership
-      ansible.builtin.meta: reset_connection
-      when: docker_group_result.changed | default(false)
-
   tasks:
-    - name: Ensure docker-env parent directory exists
+    - name: Ensure docker-env directories exist
       ansible.builtin.file:
-        path: "{{ tid_docker_env_dir | dirname }}"
+        path: "{{ item }}"
         state: directory
         owner: "{{ tid_docker_env_owner }}"
         group: "{{ tid_docker_env_group }}"
         mode: "0755"
-
-    - name: Ensure docker-env directory exists
-      ansible.builtin.file:
-        path: "{{ tid_docker_env_dir }}"
-        state: directory
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0755"
-
-    - name: Ensure docker-env TLS directory exists
-      ansible.builtin.file:
-        path: "{{ tid_docker_env_tls_dir }}"
-        state: directory
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0755"
-
-    - name: Ensure assets parent directory exists
-      ansible.builtin.file:
-        path: "{{ tid_docker_env_assets_dir | dirname }}"
-        state: directory
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0755"
+      loop:
+        - "{{ tid_docker_env_dir }}"
+        - "{{ tid_docker_env_tls_dir }}"
+        - "{{ tid_docker_env_assets_dir }}"
 
     - name: Sync infra assets repository for realm export
       ansible.builtin.git:
@@ -121,29 +82,23 @@
         mode: "0644"
         remote_src: true
 
-    - name: Render docker-env .env file
+    - name: Render docker-env files
       ansible.builtin.template:
-        src: ../files/docker-env.env.j2
-        dest: "{{ tid_docker_env_env_file }}"
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
         owner: "{{ tid_docker_env_owner }}"
         group: "{{ tid_docker_env_group }}"
-        mode: "0640"
-
-    - name: Render docker-env compose file
-      ansible.builtin.template:
-        src: ../files/docker-env-compose.yml.j2
-        dest: "{{ tid_docker_env_compose_file }}"
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0644"
-
-    - name: Render docker-env Nginx configuration
-      ansible.builtin.template:
-        src: ../files/docker-env-nginx.conf.j2
-        dest: "{{ tid_docker_env_nginx_conf_file }}"
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0644"
+        mode: "{{ item.mode }}"
+      loop:
+        - src: ../files/docker-env.env.j2
+          dest: "{{ tid_docker_env_env_file }}"
+          mode: "0640"
+        - src: ../files/docker-env-compose.yml.j2
+          dest: "{{ tid_docker_env_compose_file }}"
+          mode: "0644"
+        - src: ../files/docker-env-nginx.conf.j2
+          dest: "{{ tid_docker_env_nginx_conf_file }}"
+          mode: "0644"
 
     - name: Generate self-signed TLS certificate for docker-env endpoint
       ansible.builtin.command: >-
@@ -156,56 +111,32 @@
       args:
         creates: "{{ tid_docker_env_tls_cert_path }}"
 
-    - name: Ensure docker-env TLS private key permissions
-      ansible.builtin.file:
-        path: "{{ tid_docker_env_tls_key_path }}"
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0600"
-
-    - name: Ensure docker-env TLS certificate permissions
-      ansible.builtin.file:
-        path: "{{ tid_docker_env_tls_cert_path }}"
-        owner: "{{ tid_docker_env_owner }}"
-        group: "{{ tid_docker_env_group }}"
-        mode: "0644"
-
-    - name: Optional GHCR login for private images
-      ansible.builtin.command: >-
-        docker login {{ tid_docker_env_ghcr_registry }}
-        -u {{ tid_docker_env_ghcr_username }}
-        --password-stdin
-      args:
-        stdin: "{{ tid_docker_env_ghcr_token }}"
-      become_user: "{{ tid_docker_env_owner }}"
-      when:
-        - tid_docker_env_ghcr_username | length > 0
-        - tid_docker_env_ghcr_token | length > 0
-      no_log: true
-
-    - name: Validate docker-env compose configuration
-      ansible.builtin.command: >-
-        docker compose
-        -f {{ tid_docker_env_compose_file }}
-        --env-file {{ tid_docker_env_env_file }}
-        config -q
-      changed_when: false
-      become_user: "{{ tid_docker_env_owner }}"
-
-    - name: Pull docker-env images
-      ansible.builtin.command: >-
-        docker compose
-        -f {{ tid_docker_env_compose_file }}
-        --env-file {{ tid_docker_env_env_file }}
-        pull
-      changed_when: false
-      become_user: "{{ tid_docker_env_owner }}"
-
     - name: Ensure docker-env stack is running
       ansible.builtin.command: >-
         docker compose
         -f {{ tid_docker_env_compose_file }}
         --env-file {{ tid_docker_env_env_file }}
         up -d --remove-orphans
-      changed_when: false
       become_user: "{{ tid_docker_env_owner }}"
+      changed_when: false
+
+    - name: Patch web bundle placeholders to docker-env URL
+      ansible.builtin.command: >-
+        docker compose
+        -f {{ tid_docker_env_compose_file }}
+        --env-file {{ tid_docker_env_env_file }}
+        exec -T web sh -lc
+        "for f in /usr/share/nginx/html/assets/*.js; do
+        sed -i 's|https://your-keycloak-url|{{ tid_docker_env_public_url }}|g; s|https://your-api-url|{{ tid_docker_env_public_url }}|g' \"$f\";
+        done"
+      become_user: "{{ tid_docker_env_owner }}"
+      changed_when: false
+
+    - name: Restart web container to pick up mounted Nginx config
+      ansible.builtin.command: >-
+        docker compose
+        -f {{ tid_docker_env_compose_file }}
+        --env-file {{ tid_docker_env_env_file }}
+        restart web
+      become_user: "{{ tid_docker_env_owner }}"
+      changed_when: false

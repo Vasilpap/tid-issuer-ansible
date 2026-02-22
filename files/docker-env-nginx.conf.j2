@@ -11,6 +11,12 @@ server {
     ssl_certificate /etc/ssl/certs/tid-issuer-web.crt;
     ssl_certificate_key /etc/ssl/private/tid-issuer-web.key;
 
+    gzip off;
+    sub_filter_once off;
+    sub_filter_types application/javascript;
+    sub_filter 'https://your-keycloak-url' '{{ tid_docker_env_public_url }}';
+    sub_filter 'https://your-api-url' '{{ tid_docker_env_public_url }}';
+
     root /usr/share/nginx/html;
     index index.html;
 
