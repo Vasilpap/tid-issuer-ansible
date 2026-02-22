@@ -1,0 +1,40 @@
+---
+tid_api_repo_url: "{{ tid_repositories.api }}"
+
+tid_api_root_dir: /opt/tid-issuer
+tid_api_repo_dir: "{{ tid_api_root_dir }}/api"
+tid_api_jar_path: "{{ tid_api_repo_dir }}/target/quarkus-app/quarkus-run.jar"
+
+tid_api_user: tidissuer
+tid_api_group: tidissuer
+tid_api_user_home: /home/tidissuer
+
+tid_api_config_dir: /etc/tid-issuer
+tid_api_env_file: "{{ tid_api_config_dir }}/api.env"
+
+tid_api_service_name: tid-issuer-api
+tid_api_force_build: false
+
+tid_api_java_package: openjdk-21-jre-headless
+
+tid_api_http_port: 8080
+tid_api_db_url: "jdbc:postgresql://{{ tid_hosts.infra }}:5432/quarkusdb"
+tid_api_db_username: quarkus
+tid_api_db_password: "{{ vault_tid_api_db_password | default('change-me-api-db-password') }}"
+tid_api_db_max_size: 20
+
+tid_api_oidc_auth_server_url: "http://{{ tid_hosts.infra }}:8180/realms/{{ tid_identity.realm }}"
+tid_api_oidc_client_id: "{{ tid_identity.api_client_id }}"
+tid_api_oidc_credentials_secret: "{{ vault_tid_api_oidc_credentials_secret | default('') }}"
+tid_api_keycloak_tls_verify: none
+
+tid_api_cors_allowed_origins: "http://{{ tid_hosts.web }}"
+
+tid_api_log_sql: false
+tid_api_log_file_enable: false
+tid_api_log_file_path: /var/log/tid-issuer/application.log
+
+tid_api_minio_url: "http://{{ tid_hosts.infra }}:9000"
+tid_api_minio_access_key: "{{ vault_tid_api_minio_access_key | default('change-me-minio-access-key') }}"
+tid_api_minio_secret_key: "{{ vault_tid_api_minio_secret_key | default('change-me-minio-secret-key') }}"
+tid_api_minio_bucket: articles-of-association

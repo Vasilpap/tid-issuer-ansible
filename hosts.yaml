@@ -1,0 +1,25 @@
+---
+all:
+  vars:
+    ansible_user: vagrant
+
+  children:
+    control:
+      hosts:
+        local-control:
+          ansible_connection: local
+
+    infra_hosts:
+      hosts:
+        infra-server:
+          ansible_host: infra-server
+
+    api_hosts:
+      hosts:
+        api-server:
+          ansible_host: api-server
+
+    web_hosts:
+      hosts:
+        front-server:
+          ansible_host: front-server

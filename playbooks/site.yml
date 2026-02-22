@@ -1,0 +1,4 @@
+---
+- import_playbook: infra.yml
+- import_playbook: api.yml
+- import_playbook: web.yml

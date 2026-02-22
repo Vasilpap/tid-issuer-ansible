@@ -1,0 +1,11 @@
+# Vault secrets
+group_vars/secrets.yml
+group_vars/**/vault.yml
+
+# Local vault password helpers
+.vault_pass.txt
+vault_pass.txt
+
+# Ansible retry/cache artifacts
+*.retry
+.ansible/

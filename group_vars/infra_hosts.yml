@@ -1,0 +1,27 @@
+---
+docker_users:
+  - "{{ ansible_user }}"
+docker_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+tid_platform_repo_url: "{{ tid_repositories.infra }}"
+tid_platform_dir: /opt/tid-issuer/infra
+tid_platform_env_file: "{{ tid_platform_dir }}/.env"
+
+tid_platform_owner: "{{ ansible_user }}"
+tid_platform_group: "{{ ansible_user }}"
+
+tid_platform_quarkus_db_user: quarkus
+tid_platform_quarkus_db_password: "{{ vault_tid_platform_quarkus_db_password | default('change-me-quarkus-db-password') }}"
+tid_platform_quarkus_db_name: quarkusdb
+
+tid_platform_keycloak_db_user: keycloak
+tid_platform_keycloak_db_password: "{{ vault_tid_platform_keycloak_db_password | default('change-me-keycloak-db-password') }}"
+tid_platform_keycloak_db_name: keycloakdb
+
+tid_platform_kc_admin_user: admin
+tid_platform_kc_admin_password: "{{ vault_tid_platform_kc_admin_password | default('change-me-keycloak-admin-password') }}"
+
+tid_platform_minio_root_user: minioadmin
+tid_platform_minio_root_password: "{{ vault_tid_platform_minio_root_password | default('change-me-minio-root-password') }}"

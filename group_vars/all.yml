@@ -1,0 +1,17 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+
+tid_repositories:
+  infra: https://github.com/Vasilpap/tid-issuer-infra.git
+  api: https://github.com/Vasilpap/tid-issuer-quarkus.git
+  web: https://github.com/Vasilpap/tid-issuer-vue.git
+
+tid_identity:
+  realm: tid-issuer
+  api_client_id: quarkus-api
+  web_client_id: vue-spa
+
+tid_hosts:
+  infra: infra-server
+  api: api-server
+  web: front-server

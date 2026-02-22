@@ -1,0 +1,114 @@
+---
+- name: Deploy API application
+  hosts: api_hosts
+  become: true
+
+  handlers:
+    - name: reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: restart api
+      ansible.builtin.systemd:
+        name: "{{ tid_api_service_name }}"
+        state: restarted
+
+  pre_tasks:
+    - name: Install API prerequisites
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - unzip
+          - "{{ tid_api_java_package }}"
+        state: present
+        update_cache: true
+
+    - name: Ensure API group exists
+      ansible.builtin.group:
+        name: "{{ tid_api_group }}"
+        system: true
+
+    - name: Ensure API user exists
+      ansible.builtin.user:
+        name: "{{ tid_api_user }}"
+        group: "{{ tid_api_group }}"
+        home: "{{ tid_api_user_home }}"
+        shell: /bin/bash
+        create_home: true
+        system: true
+
+    - name: Ensure API directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ tid_api_root_dir }}"
+          owner: "{{ tid_api_user }}"
+          group: "{{ tid_api_group }}"
+          mode: "0755"
+        - path: "{{ tid_api_repo_dir | dirname }}"
+          owner: "{{ tid_api_user }}"
+          group: "{{ tid_api_group }}"
+          mode: "0755"
+        - path: "{{ tid_api_config_dir }}"
+          owner: root
+          group: "{{ tid_api_group }}"
+          mode: "0750"
+
+  tasks:
+    - name: Sync API repository
+      ansible.builtin.git:
+        repo: "{{ tid_api_repo_url }}"
+        dest: "{{ tid_api_repo_dir }}"
+        version: main
+        force: true
+        update: true
+      become_user: "{{ tid_api_user }}"
+      register: tid_api_repo_sync
+
+    - name: Check API runnable jar
+      ansible.builtin.stat:
+        path: "{{ tid_api_jar_path }}"
+      register: tid_api_jar
+
+    - name: Build API package
+      ansible.builtin.command: ./mvnw -DskipTests package
+      args:
+        chdir: "{{ tid_api_repo_dir }}"
+      become_user: "{{ tid_api_user }}"
+      when:
+        - tid_api_force_build or tid_api_repo_sync.changed or not tid_api_jar.stat.exists
+      notify: restart api
+
+    - name: Render API environment file
+      ansible.builtin.template:
+        src: ../files/api.env.j2
+        dest: "{{ tid_api_env_file }}"
+        owner: root
+        group: "{{ tid_api_group }}"
+        mode: "0640"
+      notify: restart api
+
+    - name: Render API systemd service
+      ansible.builtin.template:
+        src: ../files/tid-issuer-api.service.j2
+        dest: "/etc/systemd/system/{{ tid_api_service_name }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - reload systemd
+        - restart api
+
+    - name: Flush handlers before API service start
+      ansible.builtin.meta: flush_handlers
+
+    - name: Ensure API service is enabled and started
+      ansible.builtin.systemd:
+        name: "{{ tid_api_service_name }}"
+        state: started
+        enabled: true

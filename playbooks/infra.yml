@@ -1,0 +1,119 @@
+---
+- name: Deploy infrastructure services
+  hosts: infra_hosts
+  become: true
+
+  pre_tasks:
+    # ── Docker Engine ──────────────────────────────────────────────
+    - name: Install Docker prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker apt signing key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_arch_map.get(ansible_architecture, 'amd64') }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+        update_cache: true
+
+    - name: Install Docker Engine and Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure Docker service is enabled and running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Ensure Docker group exists
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add selected users to Docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+      when: docker_users | length > 0
+
+  tasks:
+    # ── Platform infrastructure ────────────────────────────────────
+    - name: Install platform prerequisites
+      ansible.builtin.apt:
+        name: git
+        state: present
+        update_cache: true
+
+    - name: Ensure platform parent directory exists
+      ansible.builtin.file:
+        path: "{{ tid_platform_dir | dirname }}"
+        state: directory
+        owner: "{{ tid_platform_owner }}"
+        group: "{{ tid_platform_group }}"
+        mode: "0755"
+
+    - name: Sync platform repository
+      ansible.builtin.git:
+        repo: "{{ tid_platform_repo_url }}"
+        dest: "{{ tid_platform_dir }}"
+        version: main
+        force: true
+        update: true
+      become_user: "{{ tid_platform_owner }}"
+
+    - name: Render platform .env file
+      ansible.builtin.template:
+        src: ../files/platform.env.j2
+        dest: "{{ tid_platform_env_file }}"
+        owner: "{{ tid_platform_owner }}"
+        group: "{{ tid_platform_group }}"
+        mode: "0640"
+
+    - name: Validate docker compose configuration
+      ansible.builtin.command: docker compose config -q
+      args:
+        chdir: "{{ tid_platform_dir }}"
+      become_user: "{{ tid_platform_owner }}"
+      changed_when: false
+
+    - name: Pull platform images
+      ansible.builtin.command: docker compose pull
+      args:
+        chdir: "{{ tid_platform_dir }}"
+      become_user: "{{ tid_platform_owner }}"
+      changed_when: false
+
+    - name: Ensure platform stack is running
+      ansible.builtin.command: docker compose up -d --remove-orphans
+      args:
+        chdir: "{{ tid_platform_dir }}"
+      become_user: "{{ tid_platform_owner }}"
+      changed_when: false

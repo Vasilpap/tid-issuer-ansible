@@ -1,0 +1,27 @@
+---
+tid_web_repo_url: "{{ tid_repositories.web }}"
+tid_web_repo_dir: /opt/tid-issuer/web
+tid_web_dist_dir: "{{ tid_web_repo_dir }}/dist"
+
+tid_web_build_user: vagrant
+tid_web_build_group: vagrant
+tid_web_build_home: "/home/{{ tid_web_build_user }}"
+
+tid_web_node_version: 20.12.2
+tid_web_force_build: false
+
+tid_web_env_file: "{{ tid_web_repo_dir }}/.env.production"
+
+# Empty VITE_API_BASE means the SPA uses same-origin /api paths,
+# and Nginx proxies those calls to the API service.
+tid_web_api_base: ""
+tid_web_api_proxy_url: "http://{{ tid_hosts.api }}:8080"
+
+tid_web_keycloak_url: "http://{{ tid_hosts.infra }}:8180"
+tid_web_keycloak_realm: "{{ tid_identity.realm }}"
+tid_web_keycloak_client_id: "{{ tid_identity.web_client_id }}"
+tid_web_keycloak_api_client_id: "{{ tid_identity.api_client_id }}"
+
+tid_web_root: /var/www/tid-issuer-web
+tid_web_site_name: tid-issuer-web
+tid_web_server_name: "{{ tid_hosts.web }}"

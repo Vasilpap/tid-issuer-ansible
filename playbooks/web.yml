@@ -1,0 +1,137 @@
+---
+- name: Deploy web application
+  hosts: web_hosts
+  become: true
+
+  handlers:
+    - name: restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+
+  pre_tasks:
+    - name: Install web prerequisites
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - nginx
+          - rsync
+        state: present
+        update_cache: true
+
+    - name: Ensure web parent directory exists
+      ansible.builtin.file:
+        path: "{{ tid_web_repo_dir | dirname }}"
+        state: directory
+        owner: "{{ tid_web_build_user }}"
+        group: "{{ tid_web_build_group }}"
+        mode: "0755"
+
+    - name: Install nvm for web build user
+      ansible.builtin.shell: curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+      args:
+        executable: /bin/bash
+        creates: "{{ tid_web_build_home }}/.nvm/nvm.sh"
+      become_user: "{{ tid_web_build_user }}"
+
+    - name: Install Node.js {{ tid_web_node_version }}
+      ansible.builtin.shell: |
+        . "{{ tid_web_build_home }}/.nvm/nvm.sh"
+        nvm install {{ tid_web_node_version }}
+        nvm alias default {{ tid_web_node_version }}
+      args:
+        executable: /bin/bash
+        creates: "{{ tid_web_build_home }}/.nvm/versions/node/v{{ tid_web_node_version }}"
+      become_user: "{{ tid_web_build_user }}"
+
+  tasks:
+    - name: Sync web repository
+      ansible.builtin.git:
+        repo: "{{ tid_web_repo_url }}"
+        dest: "{{ tid_web_repo_dir }}"
+        version: main
+        force: true
+        update: true
+      become_user: "{{ tid_web_build_user }}"
+      register: tid_web_repo_sync
+
+    - name: Render web production environment file
+      ansible.builtin.template:
+        src: ../files/web.env.production.j2
+        dest: "{{ tid_web_env_file }}"
+        owner: "{{ tid_web_build_user }}"
+        group: "{{ tid_web_build_group }}"
+        mode: "0644"
+      register: tid_web_env_render
+
+    - name: Check web dist output
+      ansible.builtin.stat:
+        path: "{{ tid_web_dist_dir }}/index.html"
+      register: tid_web_dist_index
+
+    - name: Install web dependencies
+      ansible.builtin.shell: |
+        . "{{ tid_web_build_home }}/.nvm/nvm.sh"
+        npm ci
+      args:
+        executable: /bin/bash
+        chdir: "{{ tid_web_repo_dir }}"
+      become_user: "{{ tid_web_build_user }}"
+      when: tid_web_repo_sync.changed or not tid_web_dist_index.stat.exists
+
+    - name: Build web assets
+      ansible.builtin.shell: |
+        . "{{ tid_web_build_home }}/.nvm/nvm.sh"
+        npm run build
+      args:
+        executable: /bin/bash
+        chdir: "{{ tid_web_repo_dir }}"
+      become_user: "{{ tid_web_build_user }}"
+      when:
+        - tid_web_force_build or tid_web_repo_sync.changed or tid_web_env_render.changed or not tid_web_dist_index.stat.exists
+
+    - name: Ensure web root exists
+      ansible.builtin.file:
+        path: "{{ tid_web_root }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Publish built web assets
+      ansible.builtin.command: >-
+        rsync -a --delete {{ tid_web_dist_dir }}/ {{ tid_web_root }}/
+      changed_when: false
+
+    - name: Render Nginx site configuration
+      ansible.builtin.template:
+        src: ../files/tid-issuer-web-nginx.conf.j2
+        dest: "/etc/nginx/sites-available/{{ tid_web_site_name }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart nginx
+
+    - name: Enable web Nginx site
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/{{ tid_web_site_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ tid_web_site_name }}"
+        state: link
+      notify: restart nginx
+
+    - name: Disable default Nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: restart nginx
+
+    - name: Flush handlers before nginx start
+      ansible.builtin.meta: flush_handlers
+
+    - name: Ensure Nginx is enabled and running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true

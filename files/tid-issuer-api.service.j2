@@ -1,0 +1,17 @@
+[Unit]
+Description=TID Issuer API
+After=network.target
+
+[Service]
+Type=simple
+User={{ tid_api_user }}
+Group={{ tid_api_group }}
+WorkingDirectory={{ tid_api_repo_dir }}
+EnvironmentFile={{ tid_api_env_file }}
+ExecStart=/usr/bin/java -jar {{ tid_api_jar_path }}
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
