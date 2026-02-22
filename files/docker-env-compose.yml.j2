@@ -97,6 +97,11 @@ services:
   web:
     image: ${WEB_IMAGE}
     restart: unless-stopped
+    command: >-
+      sh -c "for f in /usr/share/nginx/html/assets/*.js /usr/share/nginx/html/index.html; do
+      [ -f \"$f\" ] && sed -i 's|https://your-keycloak-url|${PUBLIC_URL}|g; s|https://your-api-url|${PUBLIC_URL}|g' \"$f\";
+      done;
+      exec nginx -g 'daemon off;'"
     ports:
       - "${PUBLIC_HTTPS_PORT}:443"
     depends_on:

@@ -119,24 +119,3 @@
         up -d --remove-orphans
       become_user: "{{ tid_docker_env_owner }}"
       changed_when: false
-
-    - name: Patch web bundle placeholders to docker-env URL
-      ansible.builtin.command: >-
-        docker compose
-        -f {{ tid_docker_env_compose_file }}
-        --env-file {{ tid_docker_env_env_file }}
-        exec -T web sh -lc
-        "for f in /usr/share/nginx/html/assets/*.js; do
-        sed -i 's|https://your-keycloak-url|{{ tid_docker_env_public_url }}|g; s|https://your-api-url|{{ tid_docker_env_public_url }}|g' \"$f\";
-        done"
-      become_user: "{{ tid_docker_env_owner }}"
-      changed_when: false
-
-    - name: Restart web container to pick up mounted Nginx config
-      ansible.builtin.command: >-
-        docker compose
-        -f {{ tid_docker_env_compose_file }}
-        --env-file {{ tid_docker_env_env_file }}
-        restart web
-      become_user: "{{ tid_docker_env_owner }}"
-      changed_when: false
