@@ -48,6 +48,14 @@ ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @gro
   - `ghcr.io/vasilpap/tid-issuer-vue:latest`
 - GHCR login is optional; configure `vault_tid_docker_env_ghcr_username` and `vault_tid_docker_env_ghcr_token` only for private images
 
+Quick run:
+
+```bash
+ansible-playbook -i hosts.yaml playbooks/docker-env.yml --ask-vault-pass -e @group_vars/secrets.vault.yml
+```
+
+Note: `ansible.cfg` already sets `inventory = ./hosts.yaml`, so `-i hosts.yaml` is optional when running from this repository.
+
 ## Notes
 
 - Repositories are synced from `main`.
